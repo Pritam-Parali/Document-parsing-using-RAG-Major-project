@@ -1,0 +1,21 @@
+{
+  "70c22421": {
+    "title": "tell me about engine oil",
+    "messages": [
+      {
+        "role": "user",
+        "content": "tell me about engine oil"
+      },
+      {
+        "role": "assistant",
+        "content": "The context provides information about engine oil for a motorcycle. Here's a summary:\n\n**Engine Oil Details:**\n- Grade: SAE 10W 30 SL Grade (JASO MA2)\n- Brand: Hero 4T Plus\n- Recommended to use Hero genuine engine oil or the recommended grade oil\n\n**Oil Capacity and Top-up:**\n- Oil capacity: 1.2 litres\n- Top up oil if the level reaches the lower mark or every 3000 kms\n\n**Checking Oil Level:**\n- Check oil level daily before operating the motorcycle\n- Oil level should be between the upper and lower marks on the dipstick\n\n**Changing Engine Oil:**\n- Remove the drain bolt and oil level dipstick to drain the oil\n- Reinstall the drain bolt with a new sealing washer and the oil level dipstick with a new O-ring\n- Fill the crankcase with the recommended engine oil through the filler hole\n- Ensure the oil level is at the upper mark and there are no leaks\n\n**Manufacturers:**\n- The engine oil is manufactured by Tide Water Oil Co. (India) Ltd., Bharat Petroleum Corporation Limited, and Savita Oil Technologies Limited."
+      }
+    ],
+    "created_at": "May 30, 11:47"
+  },
+  "10515d7c": {
+    "title": "New Chat",
+    "messages": [],
+    "created_at": "May 30, 11:49"
+  }
+}
