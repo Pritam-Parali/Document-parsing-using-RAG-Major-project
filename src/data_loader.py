@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List,Any
-from langchain_community.document_loaders import PyMuPDFLoader,TextLoader,csv_loader,Docx2txtLoader,UnstructuredExcelLoader,JSONLoader
+from langchain_community.document_loaders import PyMuPDFLoader,TextLoader,CSVLoader,Docx2txtLoader,UnstructuredExcelLoader,JSONLoader
 
 
 def load_all_documents(data_dir:str) -> List[Any]:
@@ -26,5 +26,62 @@ def load_all_documents(data_dir:str) -> List[Any]:
             documents.extend(loaded)
         except Exception as e:
             print(f"\nFailed to load PDF {pdf_file} : {e}")
+        
 
+       # CSV files
+    csv_files = list(data_path.glob("**/*.csv"))
+    print(f"\nFound {len(csv_files)} CSV files.")
+    for csv_file in csv_files:
+        print(f"Loading CSV : {csv_file}")
+        try:
+            loader = CSVLoader(str(csv_file))
+            loaded = loader.load()
+            print(f"Loaded {len(loaded)} csv docs from {csv_file}")
+            documents.extend(loaded)
+        except Exception as e:
+            print(f"Failed to load CSV {csv_file} : {e}")
+
+
+    #  DOCX files
+    docx_files = list(data_path.glob("**/*.docx"))
+    print(f"\nFound {len(docx_files)} DOCX files.")
+    for docx_file in docx_files:
+        print(f"Loading DOCX : {docx_file}")
+        try:
+            loader = Docx2txtLoader(str(docx_file))
+            loaded = loader.load()
+            print(f"Loaded {len(loaded)} docx docs from {docx_file}")
+            documents.extend(loaded)
+        except Exception as e:
+            print(f"Failed to load DOCX {docx_file} : {e}")
+            
+
+    #  Excel files (Handling both .xlsx and .xls)
+    excel_files = list(data_path.glob("**/*.xlsx")) + list(data_path.glob("**/*.xls"))
+    print(f"\nFound {len(excel_files)} Excel files.")
+    for excel_file in excel_files:
+        print(f"Loading Excel : {excel_file}")
+        try:
+            loader = UnstructuredExcelLoader(str(excel_file))
+            loaded = loader.load()
+            print(f"Loaded {len(loaded)} excel docs from {excel_file}")
+            documents.extend(loaded)
+        except Exception as e:
+            print(f"Failed to load Excel {excel_file} : {e}")
+
+
+    #  Text files 
+    txt_files = list(data_path.glob("**/*.txt"))
+    print(f"\nFound {len(txt_files)} TXT files.")
+    for txt_file in txt_files:
+        print(f"Loading TXT : {txt_file}")
+        try:
+            loader = TextLoader(str(txt_file))
+            loaded = loader.load()
+            print(f"Loaded {len(loaded)} txt docs from {txt_file}")
+            documents.extend(loaded)
+        except Exception as e:
+            print(f"Failed to load TXT {txt_file} : {e}")
+            
+    print(f"\nTotal documents successfully loaded: {len(documents)}")
     return documents

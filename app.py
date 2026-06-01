@@ -161,45 +161,45 @@ with st.sidebar:
     # ✅ CHAT HISTORY LIST
     # ---------------------------------------------------
 
-    st.markdown("### 🕘 Chat History")
+    with st.expander("🕘 Chat History",expanded=False):
 
     # Show chats newest first
-    sorted_chats = list(st.session_state.conversations.items())[::-1]
+        sorted_chats = list(st.session_state.conversations.items())[::-1]
 
-    for chat_id, chat_data in sorted_chats:
+        for chat_id, chat_data in sorted_chats:
 
-        is_active = (chat_id == st.session_state.current_chat_id)
-        label = f"{'💬' if is_active else '🗨️'} {chat_data['title']}"
-        caption = chat_data["created_at"]
+            is_active = (chat_id == st.session_state.current_chat_id)
+            label = f"{'💬' if is_active else '🗨️'} {chat_data['title']}"
+            caption = chat_data["created_at"]
 
-        col1, col2 = st.columns([4, 1])
+            col1, col2 = st.columns([4, 1])
 
-        with col1:
-            if st.button(label, key=f"switch_{chat_id}", use_container_width=True):
-                st.session_state.current_chat_id = chat_id
-                st.rerun()
-            st.caption(caption)
+            with col1:
+                if st.button(label, key=f"switch_{chat_id}", use_container_width=True):
+                    st.session_state.current_chat_id = chat_id
+                    st.rerun()
+                st.caption(caption)
 
-        with col2:
-            # Delete individual chat
-            if st.button("🗑", key=f"del_chat_{chat_id}"):
-                del st.session_state.conversations[chat_id]
-                save_conversations(st.session_state.conversations)
-                # If we deleted the active chat, switch to another
-                if st.session_state.current_chat_id == chat_id:
-                    if st.session_state.conversations:
-                        st.session_state.current_chat_id = list(st.session_state.conversations.keys())[-1]
-                    else:
-                        # No chats left — create a new one
-                        new_id = new_chat_id()
-                        st.session_state.conversations[new_id] = {
-                            "title": "New Chat",
-                            "messages": [],
-                            "created_at": datetime.now().strftime("%b %d, %H:%M")
-                        }
-                        st.session_state.current_chat_id = new_id
-                        save_conversations(st.session_state.conversations)
-                st.rerun()
+            with col2:
+                # Delete individual chat
+                if st.button("🗑", key=f"del_chat_{chat_id}"):
+                    del st.session_state.conversations[chat_id]
+                    save_conversations(st.session_state.conversations)
+                    # If we deleted the active chat, switch to another
+                    if st.session_state.current_chat_id == chat_id:
+                        if st.session_state.conversations:
+                            st.session_state.current_chat_id = list(st.session_state.conversations.keys())[-1]
+                        else:
+                            # No chats left — create a new one
+                            new_id = new_chat_id()
+                            st.session_state.conversations[new_id] = {
+                                "title": "New Chat",
+                                "messages": [],
+                                "created_at": datetime.now().strftime("%b %d, %H:%M")
+                            }
+                            st.session_state.current_chat_id = new_id
+                            save_conversations(st.session_state.conversations)
+                    st.rerun()
 
     st.divider()
 
@@ -211,7 +211,7 @@ with st.sidebar:
 
     uploaded_files = st.file_uploader(
         "Upload PDF files",
-        type=["pdf"],
+        type=["pdf","csv", "docx", "xlsx", "xls", "txt"],
         accept_multiple_files=True
     )
 
@@ -239,7 +239,7 @@ with st.sidebar:
 
     st.header("📁 PDF Manager")
 
-    pdf_files = list(Path(DATA_DIR).glob("*.pdf"))
+    pdf_files = list(Path(DATA_DIR).glob("*.*"))
 
     if len(pdf_files) == 0:
         st.info("No PDFs uploaded.")

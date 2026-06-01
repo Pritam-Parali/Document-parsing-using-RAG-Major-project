@@ -9,13 +9,24 @@
       {
         "role": "assistant",
         "content": "The context provides information about engine oil for a motorcycle. Here's a summary:\n\n**Engine Oil Details:**\n- Grade: SAE 10W 30 SL Grade (JASO MA2)\n- Brand: Hero 4T Plus\n- Recommended to use Hero genuine engine oil or the recommended grade oil\n\n**Oil Capacity and Top-up:**\n- Oil capacity: 1.2 litres\n- Top up oil if the level reaches the lower mark or every 3000 kms\n\n**Checking Oil Level:**\n- Check oil level daily before operating the motorcycle\n- Oil level should be between the upper and lower marks on the dipstick\n\n**Changing Engine Oil:**\n- Remove the drain bolt and oil level dipstick to drain the oil\n- Reinstall the drain bolt with a new sealing washer and the oil level dipstick with a new O-ring\n- Fill the crankcase with the recommended engine oil through the filler hole\n- Ensure the oil level is at the upper mark and there are no leaks\n\n**Manufacturers:**\n- The engine oil is manufactured by Tide Water Oil Co. (India) Ltd., Bharat Petroleum Corporation Limited, and Savita Oil Technologies Limited."
+      },
+      {
+        "role": "user",
+        "content": "summarize 05_chapter 3.pdf"
+      },
+      {
+        "role": "assistant",
+        "content": "The provided context appears to be from a vehicle owner's manual, specifically for a Hero MotoCorp model. The summary of Chapter 3 is as follows:\n\nThe chapter discusses the Vehicle Identification Number (VIN) and its components, including the manufacturer code, vehicle description, year of manufacture, assembly plant, month of manufacture, and serial number.\n\nIt also provides a disclaimer stating that the information in the manual is based on the latest product information available at the time of printing and that Hero MotoCorp Limited reserves the right to make changes without notice.\n\nAdditionally, the chapter seems to cover routine maintenance checks, including:\n\n1. Tyre condition and pressure\n2. Battery and fuse checks\n3. Front brake fluid level\n4. Rear brake operation and adjustment\n5. Lamp and horn functionality\n\nThese checks are referenced to specific page numbers in the manual, indicating where to find more detailed information on each topic."
+      },
+      {
+        "role": "user",
+        "content": "tell me about break"
+      },
+      {
+        "role": "assistant",
+        "content": "To tell you about \"break\" (braking) based on the provided context, here's a summary:\n\nFor normal braking, you should:\n1. Close the throttle.\n2. Gradually apply both front and rear brakes simultaneously.\n3. Shift down gears to suit your road speed.\n\nWhen descending a long steep slope, use engine braking by:\n1. Changing to lower gears.\n2. Using both brakes intermittently to avoid overheating the brakes.\n\nRemember to:\n- Exercise extreme caution when braking.\n- Avoid sudden acceleration, braking, or turning, as it may cause loss of control.\n- Keep all actions smooth to maintain control and safety."
       }
     ],
     "created_at": "May 30, 11:47"
-  },
-  "10515d7c": {
-    "title": "New Chat",
-    "messages": [],
-    "created_at": "May 30, 11:49"
   }
 }
