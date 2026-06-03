@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import List,Any
+import pandas as pd 
 from langchain_community.document_loaders import PyMuPDFLoader,TextLoader,CSVLoader,Docx2txtLoader,UnstructuredExcelLoader,JSONLoader
 
 
@@ -34,6 +35,10 @@ def load_all_documents(data_dir:str) -> List[Any]:
     for csv_file in csv_files:
         print(f"Loading CSV : {csv_file}")
         try:
+            df = pd.read_csv(csv_file)
+            rows,cols= df.shape
+            print(f"Rows:{rows}|Columns:{cols}|Headers:{list(df.columns)}")
+            
             loader = CSVLoader(str(csv_file))
             loaded = loader.load()
             print(f"Loaded {len(loaded)} csv docs from {csv_file}")

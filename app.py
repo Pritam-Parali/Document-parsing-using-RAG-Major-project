@@ -3,6 +3,7 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
+import pandas as pd
 
 from src.chat_history import save_conversations, load_conversations
 from src.data_loader import load_all_documents
@@ -24,7 +25,7 @@ st.set_page_config(
 # PATHS
 # ---------------------------------------------------
 
-DATA_DIR = "data/pdf"
+DATA_DIR = "data"
 FAISS_DIR = "faiss_store"
 
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -250,6 +251,14 @@ with st.sidebar:
                     f'<div class="pdf-card">📄 {pdf.name}</div>',
                     unsafe_allow_html=True
                 )
+                if pdf.suffix.lower()=="csv":
+                    try:
+                        df=pd.read_csv(pdf)
+                        st.caption(f" 📊 {df.shape[0]}Rows x {df.shape[1]}columns")
+                        
+                    except Exception as e:
+                        st.caption(f"Could not read csv{e}")
+
                 col1, col2 = st.columns([1, 1])
 
                 with col1:
@@ -313,6 +322,7 @@ if prompt:
     # Assistant response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
+            
             try:
                 rag = RAGSearch()
                 response = rag.search_and_summarize(prompt, top_k=3)
