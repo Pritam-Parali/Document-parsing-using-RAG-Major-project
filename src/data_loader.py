@@ -30,22 +30,60 @@ def load_all_documents(data_dir:str) -> List[Any]:
         
 
        # CSV files
+    from langchain_core.documents import Document
+
     csv_files = list(data_path.glob("**/*.csv"))
     print(f"\nFound {len(csv_files)} CSV files.")
+
     for csv_file in csv_files:
         print(f"Loading CSV : {csv_file}")
+
         try:
+            # Read CSV using pandas
             df = pd.read_csv(csv_file)
-            rows,cols= df.shape
-            print(f"Rows:{rows}|Columns:{cols}|Headers:{list(df.columns)}")
-            
+
+            rows, cols = df.shape
+            headers = list(df.columns)
+
+            print(f"Rows:{rows} | Columns:{cols}")
+            print(f"Headers:{headers}")
+
+            # Create a summary document for metadata queries
+            csv_summary = f"""
+        CSV File Name: {csv_file.name}
+
+        Number of Rows: {rows}
+        Number of Columns: {cols}
+
+        Column Names:
+        {', '.join(headers)}
+        """
+
+            summary_doc = Document(
+                page_content=csv_summary,
+                metadata={
+                    "source": str(csv_file),
+                    "file_name": csv_file.name,
+                    "file_type": "csv_summary",
+                    "rows": rows,
+                    "columns": cols,
+                    "headers": ", ".join(headers)
+                }
+            )
+
+            # Add summary document to vector store
+            documents.append(summary_doc)
+
+            # Load CSV rows normally
             loader = CSVLoader(str(csv_file))
             loaded = loader.load()
-            print(f"Loaded {len(loaded)} csv docs from {csv_file}")
+
+            print(f"Loaded {len(loaded)} CSV rows from {csv_file}")
+
             documents.extend(loaded)
+
         except Exception as e:
             print(f"Failed to load CSV {csv_file} : {e}")
-
 
     #  DOCX files
     docx_files = list(data_path.glob("**/*.docx"))

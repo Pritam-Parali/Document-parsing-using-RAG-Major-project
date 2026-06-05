@@ -99,7 +99,7 @@ section[data-testid="stSidebar"] {
 
 # ---------------------------------------------------
 # SESSION STATE INIT
-# ✅ NEW: conversations dict stores all chats
+#  NEW: conversations dict stores all chats
 #    each chat = { "title": str, "messages": list, "created_at": str }
 # ---------------------------------------------------
 
@@ -142,7 +142,7 @@ def current_messages():
 with st.sidebar:
 
     # ---------------------------------------------------
-    # ✅ NEW CHAT BUTTON
+    #  NEW CHAT BUTTON
     # ---------------------------------------------------
 
     if st.button("➕  New Chat", use_container_width=True):
@@ -159,10 +159,10 @@ with st.sidebar:
     st.divider()
 
     # ---------------------------------------------------
-    # ✅ CHAT HISTORY LIST
+    #  CHAT HISTORY LIST
     # ---------------------------------------------------
 
-    with st.expander("🕘 Chat History",expanded=False):
+    with st.expander(" Chat History",expanded=False):
 
     # Show chats newest first
         sorted_chats = list(st.session_state.conversations.items())[::-1]
@@ -208,7 +208,7 @@ with st.sidebar:
     # UPLOAD PDFs
     # ---------------------------------------------------
 
-    st.header("📤 Upload PDFs")
+    st.header(" Upload PDFs")
 
     uploaded_files = st.file_uploader(
         "Upload PDF files",
@@ -238,7 +238,7 @@ with st.sidebar:
     # PDF MANAGER
     # ---------------------------------------------------
 
-    st.header("📁 PDF Manager")
+    st.header(" PDF Manager")
 
     pdf_files = list(Path(DATA_DIR).glob("*.*"))
 
@@ -289,7 +289,7 @@ with st.sidebar:
 
 current_chat = st.session_state.conversations[st.session_state.current_chat_id]
 
-st.title(f"📚 {current_chat['title']}")
+st.title(f" {current_chat['title']}")
 st.divider()
 st.subheader("💬 Chat With Your PDFs")
 
@@ -309,7 +309,7 @@ prompt = st.chat_input("Ask anything about your PDFs...")
 
 if prompt:
 
-    # ✅ Auto-title the chat from first message (first 40 chars)
+    #  Auto-title the chat from first message (first 40 chars)
     if current_chat["title"] == "New Chat" and len(current_messages()) == 0:
         current_chat["title"] = prompt[:40] + ("..." if len(prompt) > 40 else "")
 

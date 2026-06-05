@@ -2,6 +2,9 @@ import os
 from dotenv import load_dotenv
 from src.vectorestore import FaissVectorStore
 from langchain_groq import ChatGroq
+import pandas as pd
+from src.csv_agent import analyze_csv
+from pathlib import Path
 
 load_dotenv()
 
@@ -20,7 +23,20 @@ class RAGSearch:
         groq_api_key = os.getenv("groq_api_key")
         self.llm = ChatGroq(groq_api_key=groq_api_key,model_name = llm_model)
         print(f"Groq LLm initialized : {llm_model}")
+
+
     def search_and_summarize(self, query: str, top_k: int = 5) -> str:
+        csv_files = list(Path("data").glob("*.csv"))
+        
+        for csv_file in csv_files:
+            csv_answer = analyze_csv(
+                query,
+                str(csv_file)
+            )
+            if csv_answer:
+                return csv_answer
+        
+
         results = self.vectorstore.query(query, top_k=top_k)
         texts = [r["metadata"].get("text", "") for r in results if r["metadata"]]
         context = "\n\n".join(texts)
