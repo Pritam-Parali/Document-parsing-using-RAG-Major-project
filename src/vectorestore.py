@@ -19,32 +19,98 @@ class FaissVectorStore:
         self.chunk_overlap = chunk_overlap
         print(f"Loaded embedding model : {embedding_model}")
     
-    def build_from_documents(self,documents : List[Any]):
+    def build_from_documents(self, documents: List[Any]):
+
         print(f"\nBuilding VectorStore from {len(documents)} raw documents ....")
-        emb_pipe = EmbeddingPipeline(model_name=self.embedding_model,chunk_size=self.chunk_size,chunk_overlap=self.chunk_overlap)
+
+        if not documents:
+            print("No documents found.")
+            self.index = None
+            self.metadata = []
+            return
+
+        emb_pipe = EmbeddingPipeline(
+            model_name=self.embedding_model,
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap
+        )
+
         chunks = emb_pipe.chunk_documents(documents)
+
+        if len(chunks) == 0:
+            print("No chunks generated.")
+            self.index = None
+            self.metadata = []
+            return
+
+        print("Number of chunks:", len(chunks))
+
         embeddings = emb_pipe.embed_chunks(chunks)
-        metadatas = [{'text': chunk.page_content} for chunk in chunks]
-        self.add_embeddings(np.array(embeddings).astype('float32'),metadatas)
-        self.save()
-        print(f"\nVectore store built and saved on {self.persist_dir}")
+
+        if embeddings is None or len(embeddings) == 0:
+            print("No embeddings generated.")
+            return
+
+        print("Embeddings type:", type(embeddings))
+        print("Embeddings shape:", np.array(embeddings).shape)
+
+        metadatas = [
+            {
+                "text": chunk.page_content,
+                "source": chunk.metadata.get("source", "Unknown")
+            }
+            for chunk in chunks
+        ]
+
+        self.add_embeddings(
+            np.array(embeddings).astype("float32"),
+            metadatas
+        )
 
 
-    def add_embeddings(self,embeddings:np.ndarray,metadatas:List[Any] = None):
+    def add_embeddings(self, embeddings: np.ndarray, metadatas: List[Any] = None):
+
+        if embeddings is None or embeddings.size == 0:
+            print("No embeddings to add.")
+            return
+
+        print("Received embeddings shape:", embeddings.shape)
+
+        if len(embeddings.shape) != 2:
+            raise ValueError(
+                f"Expected 2D embeddings but got shape {embeddings.shape}"
+            )
+
         dim = embeddings.shape[1]
-        if self.index is None :
+
+        if self.index is None:
             self.index = faiss.IndexFlatL2(dim)
+
         self.index.add(embeddings)
+
         if metadatas:
             self.metadata.extend(metadatas)
+
         print(f"Added {embeddings.shape[0]} vectors to Faiss index")
 
     def save(self):
-        faiss_path = os.path.join(self.persist_dir,"faiss.index")
-        meta_path = os.path.join(self.persist_dir,"metadata.pkl")
-        faiss.write_index(self.index,faiss_path)
-        with open(meta_path,"wb") as f:
-            pickle.dump(self.metadata,f)
+
+        if self.index is None:
+            print("No FAISS index found. Nothing to save.")
+            return
+
+        faiss_path = os.path.join(self.persist_dir, "faiss.index")
+        meta_path = os.path.join(self.persist_dir, "metadata.pkl")
+
+        print(f"Saving FAISS index to: {os.path.abspath(faiss_path)}")
+        print(f"Saving metadata to: {os.path.abspath(meta_path)}")
+
+        faiss.write_index(self.index, faiss_path)
+
+        with open(meta_path, "wb") as f:
+            pickle.dump(self.metadata, f)
+
+        print(f"Saved {len(self.metadata)} metadata entries")
         print(f"Saved Faiss index and metadata to {self.persist_dir}")
     
     def load(self):

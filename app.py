@@ -16,7 +16,7 @@ from src.search import RAGSearch
 # ---------------------------------------------------
 
 st.set_page_config(
-    page_title="RAG PDF Assistant",
+    page_title="RAG Documents Assistant",
     page_icon="📚",
     layout="wide"
 )
@@ -96,12 +96,6 @@ section[data-testid="stSidebar"] {
 
 </style>
 """, unsafe_allow_html=True)
-
-# ---------------------------------------------------
-# SESSION STATE INIT
-#  NEW: conversations dict stores all chats
-#    each chat = { "title": str, "messages": list, "created_at": str }
-# ---------------------------------------------------
 
 def new_chat_id():
     return str(uuid.uuid4())[:8]
@@ -208,10 +202,10 @@ with st.sidebar:
     # UPLOAD PDFs
     # ---------------------------------------------------
 
-    st.header(" Upload PDFs")
+    st.header(" Upload Documents")
 
     uploaded_files = st.file_uploader(
-        "Upload PDF files",
+        "Upload files",
         type=["pdf","csv", "docx", "xlsx", "xls", "txt"],
         accept_multiple_files=True
     )
@@ -223,29 +217,31 @@ with st.sidebar:
             with open(save_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-        st.success("PDF uploaded successfully!")
+        st.success("Document uploaded successfully!")
 
         with st.spinner("Updating Vector Database..."):
-            docs = load_all_documents("data")
+            docs = load_all_documents(DATA_DIR)
             store = FaissVectorStore(FAISS_DIR)
+            store.index = None
+            store.metadata = []
             store.build_from_documents(docs)
+            store.save()
 
         st.success("Vector Database Updated!")
-
     st.divider()
 
     # ---------------------------------------------------
-    # PDF MANAGER
+    # Documents MANAGER
     # ---------------------------------------------------
 
-    st.header(" PDF Manager")
+    st.header(" Document Manager")
 
     pdf_files = list(Path(DATA_DIR).glob("*.*"))
 
     if len(pdf_files) == 0:
-        st.info("No PDFs uploaded.")
+        st.info("No Documents uploaded.")
     else:
-        with st.expander(f"📂 Uploaded PDFs ({len(pdf_files)})", expanded=False):
+        with st.expander(f"📂 Uploaded Document ({len(pdf_files)})", expanded=False):
             for pdf in pdf_files:
                 st.markdown(
                     f'<div class="pdf-card">📄 {pdf.name}</div>',
@@ -276,9 +272,12 @@ with st.sidebar:
                         try:
                             os.remove(pdf)
                             st.success(f"{pdf.name} deleted!")
-                            docs = load_all_documents("data")
+                            docs = load_all_documents(DATA_DIR)
                             store = FaissVectorStore(FAISS_DIR)
+                            store.index = None
+                            store.metadata = []
                             store.build_from_documents(docs)
+                            store.save()
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error deleting file: {e}")
@@ -291,7 +290,7 @@ current_chat = st.session_state.conversations[st.session_state.current_chat_id]
 
 st.title(f" {current_chat['title']}")
 st.divider()
-st.subheader("💬 Chat With Your PDFs")
+st.subheader(" Chat With Your Documents")
 
 # ---------------------------------------------------
 # DISPLAY MESSAGES of current chat only
@@ -305,7 +304,7 @@ for message in current_messages():
 # CHAT INPUT
 # ---------------------------------------------------
 
-prompt = st.chat_input("Ask anything about your PDFs...")
+prompt = st.chat_input("Ask anything about your Documents...")
 
 if prompt:
 

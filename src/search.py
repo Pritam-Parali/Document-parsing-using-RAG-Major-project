@@ -17,6 +17,7 @@ class RAGSearch:
             from src.data_loader import load_all_documents
             docs = load_all_documents("data")
             self.vectorstore.build_from_documents(docs)
+            self.vectorstore.save()
         else:
             self.vectorstore.load()
         
@@ -26,8 +27,9 @@ class RAGSearch:
 
 
     def search_and_summarize(self, query: str, top_k: int = 5) -> str:
+
         csv_files = list(Path("data").glob("*.csv"))
-        
+
         for csv_file in csv_files:
             csv_answer = analyze_csv(
                 query,
@@ -35,14 +37,112 @@ class RAGSearch:
             )
             if csv_answer:
                 return csv_answer
-        
 
         results = self.vectorstore.query(query, top_k=top_k)
-        texts = [r["metadata"].get("text", "") for r in results if r["metadata"]]
-        context = "\n\n".join(texts)
-        if not context:
-            return "No relevant documents found."
-        prompt = f"""Summarize the following context for the query: '{query}'\n\nContext:\n{context}\n\nSummary:"""
-        response = self.llm.invoke([prompt])
+
+        # ---------------- DEBUGGING ---------------- #
+        print("\n" + "=" * 100)
+        print(f"QUERY: {query}")
+        print(f"RETRIEVED {len(results)} RESULTS")
+        print("=" * 100)
+
+        for i, r in enumerate(results, start=1):
+
+            print(f"\nRESULT #{i}")
+
+            if r["metadata"]:
+                print("SOURCE:", r["metadata"].get("source", "Unknown"))
+                print("DISTANCE:", r.get("distance"))
+
+                text = r["metadata"].get("text", "")
+                print("TEXT PREVIEW:")
+                print(text[:500])
+
+            else:
+                print("No metadata found.")
+
+            print("-" * 100)
+
+        # ---------------- CONTEXT EXTRACTION ---------------- #
+
+        texts = [
+            r["metadata"].get("text", "")
+            for r in results
+            if r["metadata"]
+        ]
+
+        context = "\n\n".join(texts).strip()
+
+        print("\nCONTEXT SENT TO LLM:")
+        print("=" * 100)
+        print(context[:3000])
+        print("=" * 100)
+
+        # ---------------- CASE 1 : CONTEXT FOUND ---------------- #
+
+        if context:
+
+            prompt = f"""
+    You are a document question-answering assistant.
+
+Your job is to answer the user's question ONLY using the provided context.
+
+Rules:
+
+1. Use ONLY the information present in the context.
+2. Do NOT use any external knowledge, assumptions, or prior information.
+3. Do NOT make up facts.
+4. If the answer is not present in the context, reply exactly:
+
+I could not find this information in the uploaded documents.
+
+5. If the context contains only part of the answer, provide only the information available in the context.
+6. Structure the answer clearly using paragraphs, bullet points, or numbered lists when appropriate.
+7. Explain the answer in your own words instead of copying the context verbatim whenever possible.
+
+User Question:
+{query}
+
+Retrieved Context:
+{context}
+
+
+    Answer:
+    """
+
+            response = self.llm.invoke(prompt)
+
+            print("\nLLM RESPONSE:")
+            print(response.content)
+            print("=" * 100)
+
+            return response.content
+
+        # ---------------- CASE 2 : NO CONTEXT FOUND ---------------- #
+
+        fallback_prompt = f"""
+    The user asked:
+
+    {query}
+
+    No relevant information was found in the uploaded documents.
+
+    Please answer the question using your general knowledge.
+
+    Before giving the answer, clearly mention that:
+
+    1. The uploaded documents do not contain information related to this question.
+    2. The following answer is based on your general knowledge.
+    3. It may not be fully accurate because it is not derived from the uploaded documents.
+
+    Then provide the best possible answer.
+    """
+
+        response = self.llm.invoke(fallback_prompt)
+
+        print("\nGENERAL KNOWLEDGE RESPONSE:")
+        print(response.content)
+        print("=" * 100)
+
         return response.content
 
