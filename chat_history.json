@@ -136,5 +136,38 @@
       }
     ],
     "created_at": "Jun 07, 21:51"
+  },
+  "1ee7acd1": {
+    "title": "New Chat",
+    "messages": [],
+    "created_at": "Jun 09, 11:09"
+  },
+  "fc1b29e6": {
+    "title": "what is the  Features of Java Programmin...",
+    "messages": [
+      {
+        "role": "user",
+        "content": "what is the  Features of Java Programming Language ?"
+      },
+      {
+        "role": "assistant",
+        "content": "Minimum value in AGE = 2.9"
+      }
+    ],
+    "created_at": "Jun 09, 11:13"
+  },
+  "71bfd8c7": {
+    "title": "tell me about air cleaner",
+    "messages": [
+      {
+        "role": "user",
+        "content": "tell me about air cleaner"
+      },
+      {
+        "role": "assistant",
+        "content": "The air cleaner is a component that requires regular maintenance. To clean the air cleaner element, it should be tapped lightly to loosen dust, and then compressed air should be blown through the air nozzle to remove the remaining dust. \n\nIt's important to note that the paper filter should never be washed, and only clean, dry, filtered air should be used to clean it. The paper filter element should be replaced every 12,000 kilometers, or earlier if it becomes very dirty, damaged on the surface, or on the sealing area.\n\nTo access the air cleaner, the seat assembly and side cover may need to be removed. The air cleaner element can then be removed by taking out the element air cleaner screws. The air cleaner should be replaced if it is excessively dirty, torn, or damaged."
+      }
+    ],
+    "created_at": "Jun 09, 11:18"
   }
 }
