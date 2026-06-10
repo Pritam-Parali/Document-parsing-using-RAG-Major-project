@@ -40,23 +40,37 @@ if __name__ == "__main__":
         print("\n===== OCR TEXT =====\n")
         print(text)
 
-        # Send OCR result to Llama
+        # Ask user what they want to know
+        user_question = input(
+            "\nWhat would you like to know about this screenshot?\n> "
+        )
+
+        # Send OCR text + question to Llama
         prompt = f"""
-The following text was extracted from a screenshot.
+You are an AI assistant.
 
-Please:
-1. Summarize it.
-2. Explain it in simple language.
-3. If it is study material, explain the topic.
-4. If it is an error message, explain the fix.
+The following text was extracted from a screenshot using OCR.
 
-Text:
+Screenshot Text:
 {text}
+
+User Question:
+{user_question}
+
+Instructions:
+1. Answer the user's question using the screenshot text.
+2. If it is study material, explain it clearly.
+3. If it is an error message, explain the cause and solution.
+4. If the user asks for notes, create notes.
+5. If the user asks for viva questions, create viva questions.
+6. If the user asks for a summary, summarize it.
+
+Answer:
 """
 
         response = llm.invoke(prompt)
 
-        print("\n===== AI EXPLANATION =====\n")
+        print("\n===== AI RESPONSE =====\n")
         print(response.content)
 
     except Exception as e:
