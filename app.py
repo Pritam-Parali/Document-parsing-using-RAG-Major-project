@@ -5,10 +5,23 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 
+from PIL import Image
+import pytesseract
+
 from src.chat_history import save_conversations, load_conversations
 from src.data_loader import load_all_documents
 from src.vectorestore import FaissVectorStore
 from src.search import RAGSearch
+
+# OCR SETTINGS
+
+pytesseract.pytesseract.tesseract_cmd = (
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+)
+
+def extract_text_from_image(image_path):
+    image = Image.open(image_path)
+    return pytesseract.image_to_string(image)
 
 
 # ---------------------------------------------------
@@ -199,6 +212,46 @@ with st.sidebar:
     st.divider()
 
     # ---------------------------------------------------
+    # SCREENSHOT OCR
+    # ---------------------------------------------------
+
+    st.header(" Screenshot OCR")
+
+    uploaded_image = st.file_uploader(
+        "Upload Screenshot",
+        type=["png", "jpg", "jpeg"],
+        key="ocr_test"
+    )
+
+    if uploaded_image:
+
+        image_path = os.path.join(
+            DATA_DIR,
+            uploaded_image.name
+        )
+
+        with open(image_path, "wb") as f:
+            f.write(uploaded_image.getbuffer())
+
+        extracted_text = extract_text_from_image(
+            image_path
+        )
+
+        st.session_state["ocr_text"] = extracted_text
+
+        st.success("Screenshot processed!")
+
+        with st.expander("View Extracted Text"):
+
+            st.text_area(
+                "OCR Text",
+                extracted_text,
+                height=250
+            )
+
+        st.divider()
+
+    # ---------------------------------------------------
     # UPLOAD PDFs
     # ---------------------------------------------------
 
@@ -321,14 +374,47 @@ if prompt:
     # Assistant response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            
+
             try:
-                rag = RAGSearch()
-                response = rag.search_and_summarize(prompt, top_k=3)
+
+                if "ocr_text" in st.session_state:
+
+                    from langchain_groq import ChatGroq
+                    from dotenv import load_dotenv
+                    import os
+
+                    load_dotenv()
+
+                    llm = ChatGroq(
+                        groq_api_key=os.getenv("groq_api_key"),
+                        model_name="llama-3.3-70b-versatile"
+                    )
+
+                    ocr_text = st.session_state["ocr_text"]
+
+                    ocr_prompt = f"""
+            You are helping the user understand a screenshot.
+
+            Screenshot Text:
+            {ocr_text}
+
+            User Question:
+            {prompt}
+
+            Answer the user's question using the screenshot text.
+            If the answer is not present, clearly say so.
+            """
+
+                    response = llm.invoke(ocr_prompt).content
+
+                else:
+
+                    rag = RAGSearch()
+                    response = rag.search_and_summarize(prompt, top_k=3)
+
             except Exception as e:
                 response = f"Error: {e}"
-
-        st.markdown(response)
+            
 
     current_messages().append({"role": "assistant", "content": response})
     save_conversations(st.session_state.conversations)
