@@ -13,3 +13,4 @@ pandas
 docx2txt
 unstructured
 openpyxl
+pytesseract
