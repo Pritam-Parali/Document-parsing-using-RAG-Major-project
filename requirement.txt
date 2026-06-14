@@ -15,3 +15,6 @@ unstructured
 openpyxl
 pytesseract
 pillow
+youtube-transcript-api
+python-docx
+reportlab

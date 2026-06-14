@@ -252,7 +252,7 @@ with st.sidebar:
         st.divider()
 
     # ---------------------------------------------------
-    # UPLOAD PDFs
+    # UPLOAD Documents
     # ---------------------------------------------------
 
     st.header(" Upload Documents")
@@ -282,6 +282,83 @@ with st.sidebar:
 
         st.success("Vector Database Updated!")
     st.divider()
+
+    st.divider()
+
+    # ---------------------------------------------------
+    # Youtube video summarizer
+    # ---------------------------------------------------
+
+    st.header("YouTube Notes")
+
+    youtube_url = st.text_input(
+        "Paste YouTube URL"
+    )
+
+    if st.button("Generate Notes"):
+
+        from src.youtube_loader import YouTubeLoader
+        from src.youtube_chunker import split_transcript
+        from src.youtube_notes import (
+            summarize_chunk,
+            generate_final_notes
+        )
+        from src.youtube_export import (
+            save_notes_docx
+        )
+
+        with st.spinner("Fetching transcript..."):
+
+            transcript = (
+                YouTubeLoader.get_transcript(
+                    youtube_url
+                )
+            )
+
+        chunks = split_transcript(
+            transcript
+        )
+
+        summaries = []
+
+        progress = st.progress(0)
+
+        for i, chunk in enumerate(chunks):
+
+            summaries.append(
+                summarize_chunk(chunk)
+            )
+
+            progress.progress(
+                (i + 1) / len(chunks)
+            )
+
+        notes = generate_final_notes(
+            summaries
+        )
+
+        save_notes_docx(
+            notes,
+            "youtube_notes.docx"
+        )
+
+        st.success("Notes Generated")
+
+        st.download_button(
+            "Download Notes",
+            open(
+                "youtube_notes.docx",
+                "rb"
+            ),
+            file_name="youtube_notes.docx"
+        )
+
+        st.text_area(
+            "Generated Notes",
+            notes,
+            height=400
+        )
+
 
     # ---------------------------------------------------
     # Documents MANAGER
