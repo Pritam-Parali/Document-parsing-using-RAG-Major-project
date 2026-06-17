@@ -5,6 +5,9 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 
+from src.diagram_generator import generate_mermaid
+from streamlit_mermaid import st_mermaid
+
 from PIL import Image
 import pytesseract
 
@@ -402,6 +405,7 @@ if prompt:
             {prompt}
 
             Answer the user's question using the screenshot text.
+            If the user asks only "3 marks", "5 marks", "10 marks", "3 mark answer", "5 mark answer", or "10 mark answer", assume they are referring to the main topic of the screenshot and generate the corresponding answer.
             If the answer is not present, clearly say so.
             """
 
@@ -419,3 +423,52 @@ if prompt:
     current_messages().append({"role": "assistant", "content": response})
     save_conversations(st.session_state.conversations)
     st.rerun()
+
+# ---------------------------------------------------
+# FLOWCHART GENERATOR
+# ---------------------------------------------------
+
+if "flowcharts" not in st.session_state:
+    st.session_state.flowcharts = []
+
+st.divider()
+
+# Show all flowcharts first
+if st.session_state.flowcharts:
+
+    st.subheader("Flowchart History")
+
+    for i, chart in enumerate(st.session_state.flowcharts, start=1):
+
+        st.markdown(f"### Flowchart {i}")
+
+        st.code(chart)
+
+        st_mermaid(chart)
+
+        st.divider()
+
+# Button at the bottom
+if st.button("📊 Generate Flowchart"):
+
+    try:
+
+        if "ocr_text" in st.session_state:
+            source_text = st.session_state["ocr_text"]
+
+        elif len(current_messages()) > 0:
+            source_text = current_messages()[-1]["content"]
+
+        else:
+            st.warning("No content available.")
+            st.stop()
+
+        mermaid_code = generate_mermaid(source_text)
+        mermaid_code = mermaid_code.replace("|>", "|")
+
+        st.session_state.flowcharts.append(mermaid_code)
+
+        st.rerun()
+
+    except Exception as e:
+        st.error(f"Error: {e}")
