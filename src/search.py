@@ -26,7 +26,7 @@ class RAGSearch:
         print(f"Groq LLm initialized : {llm_model}")
 
 
-    def search_and_summarize(self, query: str, top_k: int = 5) -> str:
+    def search_and_summarize(self, query: str,chat_history=None, top_k: int = 5) -> str:
 
         csv_files = list(Path("data").glob("*.csv"))
 
@@ -88,11 +88,20 @@ class RAGSearch:
         print("=" * 100)
         print(context[:3000])
         print("=" * 100)
+        
 
         # ---------------- CASE 1 : CONTEXT FOUND ---------------- #
+        # ---------------- Reading chat history ---------------- #
+        history_text = ""
+        if chat_history:
+            history_text = "\n".join(
+                [
+                    f"{msg['role']}: {msg['content']}"
+                    for msg in chat_history[-6:]
+                ]
+            )
 
         if context:
-
             prompt = f"""
                 You are a helpful AI assistant.
                 Use the retrieved context as the FIRST source of information.
@@ -103,7 +112,9 @@ class RAGSearch:
                 4. Never say "I cannot answer" or "I could not find the information".
                 5. Always provide the best possible answer.
                 6.If possible use bullet points to answer
-                User Question:
+                Conversation History:
+                {history_text}
+                Current User Question:
                 {query}
                 Retrieved Context:
                 {context}
@@ -120,16 +131,20 @@ class RAGSearch:
         # ---------------- CASE 2 : NO CONTEXT FOUND ---------------- #
 
         if len(filtered_results) == 0:
+                fallback_prompt = f"""
+                    You are a helpful AI assistant.
 
-            fallback_prompt = f"""
-            User Question:
-            {query}
+                    Conversation History:
+                    {history_text}
 
-            No relevant information was found in the uploaded documents.
+                    Current User Question:
+                    {query}
 
-            Answer the question using your general knowledge.
-            """
+                    No relevant information was found in the uploaded documents.
 
-            response = self.llm.invoke(fallback_prompt)
-            return response.content
+                    Answer using your general knowledge while considering the conversation history.
+                    """
+
+        response = self.llm.invoke(fallback_prompt)
+        return response.content
 

@@ -522,7 +522,11 @@ if prompt:
                 else:
 
                     rag = RAGSearch()
-                    response = rag.search_and_summarize(prompt, top_k=5)
+                    response = rag.search_and_summarize(
+                                prompt,
+                                chat_history=current_messages(),
+                                top_k=5
+                            )
 
             except Exception as e:
                 response = f"Error: {e}"
