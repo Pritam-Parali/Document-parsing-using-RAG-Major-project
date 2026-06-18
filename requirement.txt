@@ -18,3 +18,5 @@ pillow
 youtube-transcript-api
 python-docx
 reportlab
+torch
+torchvision

@@ -400,15 +400,50 @@ with st.sidebar:
                 with col2:
                     if st.button("Delete", key=f"delete_{pdf.name}"):
                         try:
+                            # Delete physical file
                             os.remove(pdf)
-                            st.success(f"{pdf.name} deleted!")
+                            # Load remaining documents
                             docs = load_all_documents(DATA_DIR)
-                            store = FaissVectorStore(FAISS_DIR)
-                            store.index = None
-                            store.metadata = []
-                            store.build_from_documents(docs)
-                            store.save()
+                            # If no documents remain, remove FAISS completely
+                            if len(docs) == 0:
+
+                                faiss_file = os.path.join(
+                                    FAISS_DIR,
+                                    "faiss.index"
+                                )
+
+                                metadata_file = os.path.join(
+                                    FAISS_DIR,
+                                    "metadata.pkl"
+                                )
+
+                                if os.path.exists(faiss_file):
+                                    os.remove(faiss_file)
+
+                                if os.path.exists(metadata_file):
+                                    os.remove(metadata_file)
+
+                                st.success(
+                                    f"{pdf.name} deleted! Vector database cleared."
+                                )
+
+                            else:
+
+                                # Rebuild FAISS using remaining documents
+                                store = FaissVectorStore(FAISS_DIR)
+
+                                store.index = None
+                                store.metadata = []
+
+                                store.build_from_documents(docs)
+                                store.save()
+
+                                st.success(
+                                    f"{pdf.name} deleted! Vector database rebuilt."
+                                )
+
                             st.rerun()
+
                         except Exception as e:
                             st.error(f"Error deleting file: {e}")
 
@@ -487,7 +522,7 @@ if prompt:
                 else:
 
                     rag = RAGSearch()
-                    response = rag.search_and_summarize(prompt, top_k=3)
+                    response = rag.search_and_summarize(prompt, top_k=5)
 
             except Exception as e:
                 response = f"Error: {e}"

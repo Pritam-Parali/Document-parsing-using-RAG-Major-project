@@ -40,6 +40,25 @@ class RAGSearch:
 
         results = self.vectorstore.query(query, top_k=top_k)
 
+        RELEVANCE_THRESHOLD = 0.35
+
+        filtered_results = []
+
+        for r in results:
+
+            score = r.get("distance", 0)
+
+            if score > RELEVANCE_THRESHOLD:
+                filtered_results.append(r)
+
+        texts = [
+            r["metadata"].get("text", "")
+            for r in filtered_results
+            if r["metadata"]
+        ]
+
+        context = "\n\n".join(texts).strip()
+
         # ---------------- DEBUGGING ---------------- #
         print("\n" + "=" * 100)
         print(f"QUERY: {query}")
@@ -65,14 +84,6 @@ class RAGSearch:
 
         # ---------------- CONTEXT EXTRACTION ---------------- #
 
-        texts = [
-            r["metadata"].get("text", "")
-            for r in results
-            if r["metadata"]
-        ]
-
-        context = "\n\n".join(texts).strip()
-
         print("\nCONTEXT SENT TO LLM:")
         print("=" * 100)
         print(context[:3000])
@@ -83,33 +94,21 @@ class RAGSearch:
         if context:
 
             prompt = f"""
-    You are a document question-answering assistant.
-
-Your job is to answer the user's question ONLY using the provided context.
-
-Rules:
-
-1. Use ONLY the information present in the context.
-2. Do NOT use any external knowledge, assumptions, or prior information.
-3. Do NOT make up facts.
-4. If the answer is not present in the context, reply exactly:
-
-I could not find this information in the uploaded documents.
-
-5. If the context contains only part of the answer, provide only the information available in the context.
-6. Structure the answer clearly using paragraphs, bullet points, or numbered lists when appropriate.
-7. Explain the answer in your own words instead of copying the context verbatim whenever possible.
-
-User Question:
-{query}
-
-Retrieved Context:
-{context}
-
-
-    Answer:
-    """
-
+                You are a helpful AI assistant.
+                Use the retrieved context as the FIRST source of information.
+                Rules:
+                1. If the context contains the answer, answer using the context.
+                2. If the context partially contains the answer, combine the context with your own knowledge.
+                3. If the context does NOT contain the answer, ignore the context and answer using your own knowledge.
+                4. Never say "I cannot answer" or "I could not find the information".
+                5. Always provide the best possible answer.
+                6.If possible use bullet points to answer
+                User Question:
+                {query}
+                Retrieved Context:
+                {context}
+                Answer:
+                """
             response = self.llm.invoke(prompt)
 
             print("\nLLM RESPONSE:")
@@ -120,29 +119,17 @@ Retrieved Context:
 
         # ---------------- CASE 2 : NO CONTEXT FOUND ---------------- #
 
-        fallback_prompt = f"""
-    The user asked:
+        if len(filtered_results) == 0:
 
-    {query}
+            fallback_prompt = f"""
+            User Question:
+            {query}
 
-    No relevant information was found in the uploaded documents.
+            No relevant information was found in the uploaded documents.
 
-    Please answer the question using your general knowledge.
+            Answer the question using your general knowledge.
+            """
 
-    Before giving the answer, clearly mention that:
-
-    1. The uploaded documents do not contain information related to this question.
-    2. The following answer is based on your general knowledge.
-    3. It may not be fully accurate because it is not derived from the uploaded documents.
-
-    Then provide the best possible answer.
-    """
-
-        response = self.llm.invoke(fallback_prompt)
-
-        print("\nGENERAL KNOWLEDGE RESPONSE:")
-        print(response.content)
-        print("=" * 100)
-
-        return response.content
+            response = self.llm.invoke(fallback_prompt)
+            return response.content
 

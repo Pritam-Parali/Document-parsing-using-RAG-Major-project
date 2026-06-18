@@ -69,28 +69,22 @@ class FaissVectorStore:
 
 
     def add_embeddings(self, embeddings: np.ndarray, metadatas: List[Any] = None):
-
         if embeddings is None or embeddings.size == 0:
             print("No embeddings to add.")
             return
-
         print("Received embeddings shape:", embeddings.shape)
-
         if len(embeddings.shape) != 2:
             raise ValueError(
                 f"Expected 2D embeddings but got shape {embeddings.shape}"
             )
-
+        embeddings = embeddings.astype("float32")
+        faiss.normalize_L2(embeddings)
         dim = embeddings.shape[1]
-
         if self.index is None:
-            self.index = faiss.IndexFlatL2(dim)
-
+            self.index = faiss.IndexFlatIP(dim)
         self.index.add(embeddings)
-
         if metadatas:
             self.metadata.extend(metadatas)
-
         print(f"Added {embeddings.shape[0]} vectors to Faiss index")
 
     def save(self):
@@ -129,8 +123,12 @@ class FaissVectorStore:
             results.append({"index":idx,"distance":dist,"metadata":meta})
         return results
     
-    def query(self,query_text : str,top_k:int = 5):
-        print(f"\nQuering vector store for {query_text}")
-        query_emb = self.model.encode([query_text]).astype('float32')
-        return self.search(query_emb,top_k=top_k)
-    
+    def query(self, query_text: str, top_k: int = 5):
+        print(f"\nQuerying vector store for: {query_text}")
+        query_emb = self.model.encode(
+            [query_text],
+            convert_to_numpy=True
+        ).astype("float32")
+        faiss.normalize_L2(query_emb)
+        return self.search(query_emb, top_k=top_k)
+        

@@ -27,11 +27,20 @@ class YouTubeLoader:
 
         ytt_api = YouTubeTranscriptApi()
 
-        fetched_transcript = ytt_api.fetch(video_id)
+        try:
+            fetched_transcript = ytt_api.fetch(
+                video_id,
+                languages=["hi", "en"]
+            )
 
-        text = " ".join(
-            snippet.text
-            for snippet in fetched_transcript
-        )
+            text = " ".join(
+                snippet.text
+                for snippet in fetched_transcript
+            )
 
-        return text
+            return text
+
+        except Exception as e:
+            raise Exception(
+                f"Transcript not available: {str(e)}"
+            )
