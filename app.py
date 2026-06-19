@@ -8,6 +8,11 @@ import pandas as pd
 from src.diagram_generator import generate_mermaid
 from streamlit_mermaid import st_mermaid
 
+from gtts import gTTS
+from io import BytesIO
+
+from streamlit_mic_recorder import speech_to_text
+
 from PIL import Image
 import pytesseract
 
@@ -352,9 +357,34 @@ st.subheader(" Chat With Your Documents")
 # DISPLAY MESSAGES of current chat only
 # ---------------------------------------------------
 
-for message in current_messages():
+for i, message in enumerate(current_messages()):
+
     with st.chat_message(message["role"]):
+
         st.markdown(message["content"])
+
+        # Read assistant messages aloud
+        if message["role"] == "assistant":
+
+            if st.button("🔊 Read Aloud", key=f"tts_{i}"):
+
+                try:
+
+                    tts = gTTS(
+                        text=message["content"],
+                        lang="en"
+                    )
+
+                    audio_bytes = BytesIO()
+                    tts.write_to_fp(audio_bytes)
+
+                    st.audio(
+                        audio_bytes.getvalue(),
+                        format="audio/mp3"
+                    )
+
+                except Exception as e:
+                    st.error(f"TTS Error: {e}")
 
 # ---------------------------------------------------
 # CHAT INPUT
