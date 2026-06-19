@@ -524,49 +524,34 @@ if prompt:
     st.rerun()
 
 # ---------------------------------------------------
-# FLOWCHART GENERATOR
+# SCREENSHOT FLOWCHART BUTTON
 # ---------------------------------------------------
 
-st.divider()
+if current_chat.get("ocr_text"):
 
-# Show all flowcharts first
-if current_chat.get("flowcharts"):
+    st.divider()
 
-    st.subheader("Flowchart History")
-
-    for i, chart in enumerate(current_chat["flowcharts"], start=1):
-        st.markdown(f"### Flowchart {i}")
-
-        st.code(chart)
+    if st.button("📊 Generate Screenshot Flowchart"):
 
         try:
-            st_mermaid(chart, key=f"mermaid_{i}")
+
+            mermaid_code = generate_mermaid(
+                current_chat["ocr_text"]
+            )
+
+            mermaid_code = mermaid_code.replace("|>", "|")
+
+            current_messages().append({
+                "role": "assistant",
+                "content": "✅ Screenshot Flowchart Generated.",
+                "diagram": mermaid_code
+            })
+
+            save_conversations(
+                st.session_state.conversations
+            )
+
+            st.rerun()
+
         except Exception as e:
-            st.error(f"Mermaid Error: {e}")
-
-        st.divider()
-
-# Button at the bottom
-if st.button("📊 Generate Flowchart"):
-
-    try:
-
-        if current_chat.get("ocr_text"):
-            source_text = current_chat["ocr_text"]
-
-        elif len(current_messages()) > 0:
-            source_text = current_messages()[-1]["content"]
-
-        else:
-            st.warning("No content available.")
-            st.stop()
-
-        mermaid_code = generate_mermaid(source_text)
-        mermaid_code = mermaid_code.replace("|>", "|")
-
-        current_chat.setdefault("flowcharts", []).append(mermaid_code)
-
-        st.rerun()
-
-    except Exception as e:
-        st.error(f"Error: {e}")
+            st.error(f"Error: {e}")
