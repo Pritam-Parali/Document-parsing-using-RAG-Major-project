@@ -15,3 +15,5 @@ unstructured
 openpyxl
 pytesseract
 pillow
+streamlit-mermaid
+gtts
