@@ -5,6 +5,12 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 
+from src.diagram_generator import generate_mermaid
+from streamlit_mermaid import st_mermaid
+
+from gtts import gTTS
+from io import BytesIO
+
 from PIL import Image
 import pytesseract
 
@@ -115,6 +121,9 @@ def new_chat_id():
 
 if "conversations" not in st.session_state:
     saved = load_conversations()
+    for chat in saved.values():
+        if "flowcharts" not in chat:
+            chat["flowcharts"] = []
 
     if saved:
         # Restore from disk
@@ -128,6 +137,8 @@ if "conversations" not in st.session_state:
             first_id: {
                 "title": "New Chat",
                 "messages": [],
+                "flowcharts": [],
+                "ocr_text": None,
                 "created_at": datetime.now().strftime("%b %d, %H:%M")
             }
         }
@@ -157,6 +168,8 @@ with st.sidebar:
         st.session_state.conversations[new_id] = {
             "title": "New Chat",
             "messages": [],
+            "flowcharts": [],
+            "ocr_text": None,
             "created_at": datetime.now().strftime("%b %d, %H:%M")
         }
         st.session_state.current_chat_id = new_id
@@ -237,7 +250,11 @@ with st.sidebar:
             image_path
         )
 
-        st.session_state["ocr_text"] = extracted_text
+        current_chat = st.session_state.conversations[
+            st.session_state.current_chat_id
+        ]
+
+        current_chat["ocr_text"] = extracted_text
 
         st.success("Screenshot processed!")
 
@@ -461,13 +478,57 @@ st.subheader(" Chat With Your Documents")
 # DISPLAY MESSAGES of current chat only
 # ---------------------------------------------------
 
-for message in current_messages():
+for i, message in enumerate(current_messages()):
+
     with st.chat_message(message["role"]):
+
         st.markdown(message["content"])
+
+        # Read assistant messages aloud
+        if message["role"] == "assistant":
+
+            if st.button("🔊 Read Aloud", key=f"tts_{i}"):
+
+                try:
+
+                    tts = gTTS(
+                        text=message["content"],
+                        lang="en"
+                    )
+
+                    audio_bytes = BytesIO()
+                    tts.write_to_fp(audio_bytes)
+
+                    st.audio(
+                        audio_bytes.getvalue(),
+                        format="audio/mp3"
+                    )
+
+                except Exception as e:
+                    st.error(f"TTS Error: {e}")
+
+    # Show diagram BELOW the bot message
+    if "diagram" in message:
+
+        st.code(message["diagram"])
+
+        try:
+
+            st_mermaid(
+                message["diagram"],
+                key=f"diagram_{i}"
+            )
+
+        except Exception as e:
+
+            st.error(f"Diagram Error: {e}")
+
+        st.divider()
 
 # ---------------------------------------------------
 # CHAT INPUT
 # ---------------------------------------------------
+
 
 prompt = st.chat_input("Ask anything about your Documents...")
 
@@ -489,7 +550,38 @@ if prompt:
 
             try:
 
-                if "ocr_text" in st.session_state:
+                if "flowchart" in prompt.lower() or "diagram" in prompt.lower():
+
+                    rag = RAGSearch()
+
+                    prompt_lower = prompt.lower()
+
+                    topic = prompt
+
+                    for phrase in [
+                        "create a flowchart of",
+                        "create flowchart of",
+                        "create a diagram of",
+                        "create diagram of",
+                    ]:
+                        if phrase in prompt_lower:
+                            index = prompt_lower.find(phrase)
+                            topic = prompt[index + len(phrase):].strip()
+                            break
+
+                    context = rag.search_and_summarize(topic, top_k=3)
+
+                    mermaid_code = generate_mermaid(context)
+                    mermaid_code = mermaid_code.replace("|>", "|")
+
+                    current_chat.setdefault("flowcharts", []).append(mermaid_code)
+
+                    response = {
+                        "text": "✅ Flowchart generated.",
+                        "diagram": mermaid_code
+                    }
+
+                elif current_chat.get("ocr_text"):
 
                     from langchain_groq import ChatGroq
                     from dotenv import load_dotenv
@@ -502,20 +594,20 @@ if prompt:
                         model_name="llama-3.3-70b-versatile"
                     )
 
-                    ocr_text = st.session_state["ocr_text"]
+                    ocr_text = current_chat["ocr_text"]
 
                     ocr_prompt = f"""
-            You are helping the user understand a screenshot.
+                You are helping the user understand a screenshot.
 
-            Screenshot Text:
-            {ocr_text}
+                Screenshot Text:
+                {ocr_text}
 
-            User Question:
-            {prompt}
+                User Question:
+                {prompt}
 
-            Answer the user's question using the screenshot text.
-            If the answer is not present, clearly say so.
-            """
+                Answer the user's question using the screenshot text.
+                If the answer is not present, clearly say so.
+                """
 
                     response = llm.invoke(ocr_prompt).content
 
@@ -528,10 +620,55 @@ if prompt:
                                 top_k=5
                             )
 
+                    response = rag.search_and_summarize(prompt, top_k=3)
+
             except Exception as e:
                 response = f"Error: {e}"
             
 
-    current_messages().append({"role": "assistant", "content": response})
+    if isinstance(response, dict):
+        current_messages().append({
+            "role": "assistant",
+            "content": response["text"],
+            "diagram": response["diagram"]
+        })
+    else:
+        current_messages().append({
+            "role": "assistant",
+            "content": response
+        })
     save_conversations(st.session_state.conversations)
     st.rerun()
+
+# ---------------------------------------------------
+# SCREENSHOT FLOWCHART BUTTON
+# ---------------------------------------------------
+
+if current_chat.get("ocr_text"):
+
+    st.divider()
+
+    if st.button("📊 Generate Screenshot Flowchart"):
+
+        try:
+
+            mermaid_code = generate_mermaid(
+                current_chat["ocr_text"]
+            )
+
+            mermaid_code = mermaid_code.replace("|>", "|")
+
+            current_messages().append({
+                "role": "assistant",
+                "content": "✅ Screenshot Flowchart Generated.",
+                "diagram": mermaid_code
+            })
+
+            save_conversations(
+                st.session_state.conversations
+            )
+
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"Error: {e}")
