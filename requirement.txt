@@ -13,3 +13,12 @@ pandas
 docx2txt
 unstructured
 openpyxl
+pytesseract
+pillow
+streamlit-mermaid
+gtts
+youtube-transcript-api
+python-docx
+reportlab
+torch
+torchvision

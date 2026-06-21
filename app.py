@@ -5,10 +5,29 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 
+from src.diagram_generator import generate_mermaid
+from streamlit_mermaid import st_mermaid
+
+from gtts import gTTS
+from io import BytesIO
+
+from PIL import Image
+import pytesseract
+
 from src.chat_history import save_conversations, load_conversations
 from src.data_loader import load_all_documents
 from src.vectorestore import FaissVectorStore
 from src.search import RAGSearch
+
+# OCR SETTINGS
+
+pytesseract.pytesseract.tesseract_cmd = (
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+)
+
+def extract_text_from_image(image_path):
+    image = Image.open(image_path)
+    return pytesseract.image_to_string(image)
 
 
 # ---------------------------------------------------
@@ -102,6 +121,9 @@ def new_chat_id():
 
 if "conversations" not in st.session_state:
     saved = load_conversations()
+    for chat in saved.values():
+        if "flowcharts" not in chat:
+            chat["flowcharts"] = []
 
     if saved:
         # Restore from disk
@@ -115,6 +137,8 @@ if "conversations" not in st.session_state:
             first_id: {
                 "title": "New Chat",
                 "messages": [],
+                "flowcharts": [],
+                "ocr_text": None,
                 "created_at": datetime.now().strftime("%b %d, %H:%M")
             }
         }
@@ -144,6 +168,8 @@ with st.sidebar:
         st.session_state.conversations[new_id] = {
             "title": "New Chat",
             "messages": [],
+            "flowcharts": [],
+            "ocr_text": None,
             "created_at": datetime.now().strftime("%b %d, %H:%M")
         }
         st.session_state.current_chat_id = new_id
@@ -199,7 +225,51 @@ with st.sidebar:
     st.divider()
 
     # ---------------------------------------------------
-    # UPLOAD PDFs
+    # SCREENSHOT OCR
+    # ---------------------------------------------------
+
+    st.header(" Screenshot OCR")
+
+    uploaded_image = st.file_uploader(
+        "Upload Screenshot",
+        type=["png", "jpg", "jpeg"],
+        key="ocr_test"
+    )
+
+    if uploaded_image:
+
+        image_path = os.path.join(
+            DATA_DIR,
+            uploaded_image.name
+        )
+
+        with open(image_path, "wb") as f:
+            f.write(uploaded_image.getbuffer())
+
+        extracted_text = extract_text_from_image(
+            image_path
+        )
+
+        current_chat = st.session_state.conversations[
+            st.session_state.current_chat_id
+        ]
+
+        current_chat["ocr_text"] = extracted_text
+
+        st.success("Screenshot processed!")
+
+        with st.expander("View Extracted Text"):
+
+            st.text_area(
+                "OCR Text",
+                extracted_text,
+                height=250
+            )
+
+        st.divider()
+
+    # ---------------------------------------------------
+    # UPLOAD Documents
     # ---------------------------------------------------
 
     st.header(" Upload Documents")
@@ -229,6 +299,83 @@ with st.sidebar:
 
         st.success("Vector Database Updated!")
     st.divider()
+
+    st.divider()
+
+    # ---------------------------------------------------
+    # Youtube video summarizer
+    # ---------------------------------------------------
+
+    st.header("YouTube Notes")
+
+    youtube_url = st.text_input(
+        "Paste YouTube URL"
+    )
+
+    if st.button("Generate Notes"):
+
+        from src.youtube_loader import YouTubeLoader
+        from src.youtube_chunker import split_transcript
+        from src.youtube_notes import (
+            summarize_chunk,
+            generate_final_notes
+        )
+        from src.youtube_export import (
+            save_notes_docx
+        )
+
+        with st.spinner("Fetching transcript..."):
+
+            transcript = (
+                YouTubeLoader.get_transcript(
+                    youtube_url
+                )
+            )
+
+        chunks = split_transcript(
+            transcript
+        )
+
+        summaries = []
+
+        progress = st.progress(0)
+
+        for i, chunk in enumerate(chunks):
+
+            summaries.append(
+                summarize_chunk(chunk)
+            )
+
+            progress.progress(
+                (i + 1) / len(chunks)
+            )
+
+        notes = generate_final_notes(
+            summaries
+        )
+
+        save_notes_docx(
+            notes,
+            "youtube_notes.docx"
+        )
+
+        st.success("Notes Generated")
+
+        st.download_button(
+            "Download Notes",
+            open(
+                "youtube_notes.docx",
+                "rb"
+            ),
+            file_name="youtube_notes.docx"
+        )
+
+        st.text_area(
+            "Generated Notes",
+            notes,
+            height=400
+        )
+
 
     # ---------------------------------------------------
     # Documents MANAGER
@@ -270,15 +417,50 @@ with st.sidebar:
                 with col2:
                     if st.button("Delete", key=f"delete_{pdf.name}"):
                         try:
+                            # Delete physical file
                             os.remove(pdf)
-                            st.success(f"{pdf.name} deleted!")
+                            # Load remaining documents
                             docs = load_all_documents(DATA_DIR)
-                            store = FaissVectorStore(FAISS_DIR)
-                            store.index = None
-                            store.metadata = []
-                            store.build_from_documents(docs)
-                            store.save()
+                            # If no documents remain, remove FAISS completely
+                            if len(docs) == 0:
+
+                                faiss_file = os.path.join(
+                                    FAISS_DIR,
+                                    "faiss.index"
+                                )
+
+                                metadata_file = os.path.join(
+                                    FAISS_DIR,
+                                    "metadata.pkl"
+                                )
+
+                                if os.path.exists(faiss_file):
+                                    os.remove(faiss_file)
+
+                                if os.path.exists(metadata_file):
+                                    os.remove(metadata_file)
+
+                                st.success(
+                                    f"{pdf.name} deleted! Vector database cleared."
+                                )
+
+                            else:
+
+                                # Rebuild FAISS using remaining documents
+                                store = FaissVectorStore(FAISS_DIR)
+
+                                store.index = None
+                                store.metadata = []
+
+                                store.build_from_documents(docs)
+                                store.save()
+
+                                st.success(
+                                    f"{pdf.name} deleted! Vector database rebuilt."
+                                )
+
                             st.rerun()
+
                         except Exception as e:
                             st.error(f"Error deleting file: {e}")
 
@@ -296,13 +478,57 @@ st.subheader(" Chat With Your Documents")
 # DISPLAY MESSAGES of current chat only
 # ---------------------------------------------------
 
-for message in current_messages():
+for i, message in enumerate(current_messages()):
+
     with st.chat_message(message["role"]):
+
         st.markdown(message["content"])
+
+        # Read assistant messages aloud
+        if message["role"] == "assistant":
+
+            if st.button("🔊 Read Aloud", key=f"tts_{i}"):
+
+                try:
+
+                    tts = gTTS(
+                        text=message["content"],
+                        lang="en"
+                    )
+
+                    audio_bytes = BytesIO()
+                    tts.write_to_fp(audio_bytes)
+
+                    st.audio(
+                        audio_bytes.getvalue(),
+                        format="audio/mp3"
+                    )
+
+                except Exception as e:
+                    st.error(f"TTS Error: {e}")
+
+    # Show diagram BELOW the bot message
+    if "diagram" in message:
+
+        st.code(message["diagram"])
+
+        try:
+
+            st_mermaid(
+                message["diagram"],
+                key=f"diagram_{i}"
+            )
+
+        except Exception as e:
+
+            st.error(f"Diagram Error: {e}")
+
+        st.divider()
 
 # ---------------------------------------------------
 # CHAT INPUT
 # ---------------------------------------------------
+
 
 prompt = st.chat_input("Ask anything about your Documents...")
 
@@ -321,15 +547,128 @@ if prompt:
     # Assistant response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            
+
             try:
-                rag = RAGSearch()
-                response = rag.search_and_summarize(prompt, top_k=3)
+
+                if "flowchart" in prompt.lower() or "diagram" in prompt.lower():
+
+                    rag = RAGSearch()
+
+                    prompt_lower = prompt.lower()
+
+                    topic = prompt
+
+                    for phrase in [
+                        "create a flowchart of",
+                        "create flowchart of",
+                        "create a diagram of",
+                        "create diagram of",
+                    ]:
+                        if phrase in prompt_lower:
+                            index = prompt_lower.find(phrase)
+                            topic = prompt[index + len(phrase):].strip()
+                            break
+
+                    context = rag.search_and_summarize(topic, top_k=3)
+
+                    mermaid_code = generate_mermaid(context)
+                    mermaid_code = mermaid_code.replace("|>", "|")
+
+                    current_chat.setdefault("flowcharts", []).append(mermaid_code)
+
+                    response = {
+                        "text": "✅ Flowchart generated.",
+                        "diagram": mermaid_code
+                    }
+
+                elif current_chat.get("ocr_text"):
+
+                    from langchain_groq import ChatGroq
+                    from dotenv import load_dotenv
+                    import os
+
+                    load_dotenv()
+
+                    llm = ChatGroq(
+                        groq_api_key=os.getenv("groq_api_key"),
+                        model_name="llama-3.3-70b-versatile"
+                    )
+
+                    ocr_text = current_chat["ocr_text"]
+
+                    ocr_prompt = f"""
+                You are helping the user understand a screenshot.
+
+                Screenshot Text:
+                {ocr_text}
+
+                User Question:
+                {prompt}
+
+                Answer the user's question using the screenshot text.
+                If the answer is not present, clearly say so.
+                """
+
+                    response = llm.invoke(ocr_prompt).content
+
+                else:
+
+                    rag = RAGSearch()
+                    response = rag.search_and_summarize(
+                                prompt,
+                                chat_history=current_messages(),
+                                top_k=5
+                            )
+
+                    response = rag.search_and_summarize(prompt, top_k=3)
+
             except Exception as e:
                 response = f"Error: {e}"
+            
 
-        st.markdown(response)
-
-    current_messages().append({"role": "assistant", "content": response})
+    if isinstance(response, dict):
+        current_messages().append({
+            "role": "assistant",
+            "content": response["text"],
+            "diagram": response["diagram"]
+        })
+    else:
+        current_messages().append({
+            "role": "assistant",
+            "content": response
+        })
     save_conversations(st.session_state.conversations)
     st.rerun()
+
+# ---------------------------------------------------
+# SCREENSHOT FLOWCHART BUTTON
+# ---------------------------------------------------
+
+if current_chat.get("ocr_text"):
+
+    st.divider()
+
+    if st.button("📊 Generate Screenshot Flowchart"):
+
+        try:
+
+            mermaid_code = generate_mermaid(
+                current_chat["ocr_text"]
+            )
+
+            mermaid_code = mermaid_code.replace("|>", "|")
+
+            current_messages().append({
+                "role": "assistant",
+                "content": "✅ Screenshot Flowchart Generated.",
+                "diagram": mermaid_code
+            })
+
+            save_conversations(
+                st.session_state.conversations
+            )
+
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"Error: {e}")
