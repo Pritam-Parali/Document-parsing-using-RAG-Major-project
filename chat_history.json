@@ -1,18 +1,7 @@
 {
-  "b3c28db5": {
-    "title": "hi",
-    "messages": [
-      {
-        "role": "user",
-        "content": "hi"
-      },
-      {
-        "role": "assistant",
-        "content": "I could not find this information in the uploaded documents."
-      }
-    ],
-    "flowcharts": [],
-    "ocr_text": null,
-    "created_at": "Jun 20, 19:01"
+  "dcfd4496": {
+    "title": "New Chat",
+    "messages": [],
+    "created_at": "Jun 20, 19:40"
   }
 }
