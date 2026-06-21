@@ -8,8 +8,13 @@ import pandas as pd
 from src.diagram_generator import generate_mermaid
 from streamlit_mermaid import st_mermaid
 
+from src.pdf_export import create_flowchart_pdf
+
 from gtts import gTTS
 from io import BytesIO
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 from PIL import Image
 import pytesseract
@@ -518,6 +523,31 @@ for i, message in enumerate(current_messages()):
                 message["diagram"],
                 key=f"diagram_{i}"
             )
+
+            pdf_file = f"flowchart_{i}.pdf"
+
+            create_flowchart_pdf(
+                pdf_file,
+                "Generated Flowchart",
+                message["diagram"]
+            )
+
+            col1, col2 = st.columns([18, 1])
+
+            with col2:
+
+                with st.popover("⋮"):
+
+                    with open(pdf_file, "rb") as file:
+
+                        st.download_button(
+                            label="📥 Download PDF",
+                            data=file,
+                            file_name=pdf_file,
+                            mime="application/pdf",
+                            key=f"pdf_{i}",
+                            use_container_width=True
+                        )
 
         except Exception as e:
 
