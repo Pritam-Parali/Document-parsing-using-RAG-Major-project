@@ -17,6 +17,8 @@ from io import BytesIO
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
+from src.text_export import create_text_pdf
+
 from PIL import Image
 import pytesseract
 
@@ -513,6 +515,37 @@ for i, message in enumerate(current_messages()):
                 except Exception as e:
                     st.error(f"TTS Error: {e}")
 
+    # Download assistant response as PDF
+    safe_title = (
+        message["content"][:30]
+        .replace(" ", "_")
+        .replace("/", "_")
+    )
+
+    pdf_file = f"{safe_title}.pdf"
+
+    create_text_pdf(
+        pdf_file,
+        "Assistant Response",
+        message["content"]
+    )
+
+    col1, col2 = st.columns([18, 1])
+
+    with col2:
+
+        with st.popover("⋮"):
+
+            with open(pdf_file, "rb") as file:
+
+                st.download_button(
+                    label="📄 Download PDF",
+                    data=file,
+                    file_name=pdf_file,
+                    mime="application/pdf",
+                    key=f"response_pdf_{i}",
+                    use_container_width=True
+                )
     # Show diagram BELOW the bot message
     if "diagram" in message:
 
