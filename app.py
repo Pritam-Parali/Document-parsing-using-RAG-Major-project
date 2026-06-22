@@ -9,6 +9,7 @@ from src.diagram_generator import generate_mermaid
 from streamlit_mermaid import st_mermaid
 
 from src.pdf_export import create_flowchart_pdf
+from src.flowchart_export import mermaid_to_png
 
 from gtts import gTTS
 from io import BytesIO
@@ -524,11 +525,19 @@ for i, message in enumerate(current_messages()):
                 key=f"diagram_{i}"
             )
 
+            png_file = f"flowchart_{i}.png"
+
+            mermaid_to_png(
+                message["diagram"],
+                png_file
+            )
+
             pdf_file = f"flowchart_{i}.pdf"
 
             create_flowchart_pdf(
                 pdf_file,
                 "Generated Flowchart",
+                png_file,
                 message["diagram"]
             )
 

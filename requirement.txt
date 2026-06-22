@@ -22,3 +22,6 @@ python-docx
 reportlab
 torch
 torchvision
+cairosvg
+playwright
+reportlab
