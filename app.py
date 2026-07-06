@@ -228,7 +228,7 @@ with st.sidebar:
     # SCREENSHOT OCR
     # ---------------------------------------------------
 
-    st.header(" Screenshot OCR")
+    st.header(" Flowchart and Text extract ")
 
     uploaded_image = st.file_uploader(
         "Upload Screenshot",

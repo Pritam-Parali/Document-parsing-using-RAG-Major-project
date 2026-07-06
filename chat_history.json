@@ -1,40 +1,4 @@
 {
-  "a8438d9e": {
-    "title": "who are Martian Lion ?",
-    "messages": [
-      {
-        "role": "user",
-        "content": "who are Martian Lion ?"
-      },
-      {
-        "role": "assistant",
-        "content": "The Martian Lion is a hypothetical species described in the context as a mysterious and powerful creature that has adapted to the harsh environment of Mars. Here are some key characteristics and facts about the Martian Lion:\n\n* **Physical characteristics:**\n  * Larger than Earth's lions, standing nearly 2 meters tall at the shoulder\n  * Measures over 5 meters from nose to tail\n  * Covered with shimmering crimson and golden fur that changes color depending on the surrounding temperature\n* **Unique features:**\n  * Glowing crystal mane that forms a brilliant beacon visible from orbit\n  * Ability to thrive in the harsh Martian environment\n* **Behavior and significance:**\n  * Considered a symbol of friendship between humanity and the wildlife of Mars\n  * Known to form prides and shield damaged spacecraft from harm\n  * Inspires scientists, explorers, and dreamers to explore the possibilities of life beyond Earth\n* **Theories about its origins:**\n  * May be a natural product of millions of years of evolution\n  * Possibly genetically engineered by an ancient civilization that once inhabited Mars\n* **Impact on human understanding:**\n  * Transformed humanity's understanding of life in the universe\n  * Proved that intelligence, beauty, and resilience can emerge under extreme conditions\n  * Serves as a reminder that every world holds secrets waiting to be discovered"
-      },
-      {
-        "role": "assistant",
-        "content": "✅ Screenshot Flowchart Generated.",
-        "diagram": "flowchart TD\nA[Python Program]\nA --> B[Input Number]\nA --> C[Check Palindrome]\nA --> D[Print Result]"
-      },
-      {
-        "role": "user",
-        "content": "tell me  most fascinating features of the Martian Lion"
-      },
-      {
-        "role": "assistant",
-        "content": "The screenshot text does not mention the \"Martian Lion\" or any of its features. The text appears to be a Python program that checks if a given number is a palindrome. Therefore, I couldn't find any information related to the Martian Lion in the provided screenshot."
-      },
-      {
-        "role": "user",
-        "content": "tell me most fascinating features of the Martian Lion"
-      },
-      {
-        "role": "assistant",
-        "content": "The screenshot text does not mention the \"Martian Lion\" at all. It appears to be a Python program that checks if a given number is a palindrome. There is no information about the Martian Lion or any of its features."
-      }
-    ],
-    "created_at": "Jul 06, 15:23",
-    "ocr_text": "Python Program to Check if a\nNumber is a Palindrome\n\nnum = input(\"Enter a number: \")\n\naif num == num[::-1]:\n\nprint(f\"{num} is a palindrome.\")\nelse:\n\nprint(#\"{num} is not a palindrome.\")\n\n#source code --> clcoding.com\n\nEnter a number: 121\n121 is a palindrome.\n\na)\n\nEX /cleoding\n\n© /Pythoncoding\n\ne\n\n@ /Pythonclcoding\n"
-  },
   "4198469d": {
     "title": "tell me most fascinating features of the...",
     "messages": [
